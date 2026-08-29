@@ -1,18 +1,12 @@
-name: Hello Workflow
+name: Trigger experiment
 
 on:
   push:
 
 jobs:
-  hello-job:
+  trigger-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Say hello
-        run: echo "Hello GitHub Actions"
-
-      - name: Break things
-        run: echo "Everything is fine"
-
-      - name: Say goodbye
-        run: echo "Goodbye GitHub Actions"
+      - name: Show message
+        run: echo "The workflow was triggered by a push"
