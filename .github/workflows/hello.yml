@@ -10,6 +10,9 @@ jobs:
     steps:
       - name: Say hello
         run: echo "Hello GitHub Actions"
+        
+      - name: Break things
+        run: comando-que-no-existe
 
       - name: Say goodbye
         run: echo "Goodbye GitHub Actions"
