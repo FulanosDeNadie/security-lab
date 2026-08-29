@@ -1,7 +1,7 @@
 name: Trigger experiment
 
 on:
-  push:
+  pull_request:
 
 jobs:
   trigger-test:
@@ -9,4 +9,4 @@ jobs:
 
     steps:
       - name: Show message
-        run: echo "The workflow was triggered by a push"
+        run: echo "The workflow was triggered by a pull request"
