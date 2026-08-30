@@ -1,0 +1,14 @@
+name: Workflow triggered on workflow file changes
+
+on:
+  push:
+    paths:
+      - '.github/workflows/**'
+
+jobs:
+  manual-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Say hello
+        run: echo "Some workflows have been modified, this workflow runs on any push to the .github/workflows directory"

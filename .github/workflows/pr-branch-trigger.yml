@@ -1,0 +1,16 @@
+name: PR branch trigger
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+
+jobs:
+  pr-branch-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show message
+        run: echo "This PR targets main"
