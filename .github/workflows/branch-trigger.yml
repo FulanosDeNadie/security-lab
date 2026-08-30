@@ -1,0 +1,14 @@
+name: Branch trigger experiment
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  branch-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show branch
+        run: echo "This workflow runs on pushes to main"
