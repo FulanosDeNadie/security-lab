@@ -2,8 +2,9 @@ name: Trigger experiment
 
 on:
   push:
-  pull_request:
-
+  pull_request: 
+    types: [opened]
+    
 jobs:
   trigger-test:
     runs-on: ubuntu-latest
