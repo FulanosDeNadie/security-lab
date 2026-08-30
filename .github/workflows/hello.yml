@@ -1,6 +1,7 @@
 name: Trigger experiment
 
 on:
+  push:
   pull_request:
 
 jobs:
