@@ -1,5 +1,4 @@
 name: Branch trigger experiment
-
 on:
   push:
     branches:
