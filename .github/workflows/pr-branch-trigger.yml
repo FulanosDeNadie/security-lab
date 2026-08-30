@@ -4,7 +4,8 @@ on:
   pull_request:
     branches:
       - main
-    types: [opened]
+    paths:
+      - 'README.md'
 
 jobs:
   pr-branch-test:
