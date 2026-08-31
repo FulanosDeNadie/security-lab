@@ -32,9 +32,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Security check
-        if: github.event_name == 'pull_request'
-        run: echo "Security check passed"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check workflow files
+        run: |
+          echo "Checking GitHub Actions workflows..."
+          find .github/workflows -type f -name "*.yml" -o -name "*.yaml"
   
   
   gate:
