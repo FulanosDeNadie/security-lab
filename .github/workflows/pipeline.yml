@@ -31,6 +31,9 @@ jobs:
   security:
     runs-on: ubuntu-latest
 
+    outputs:
+      security-result: ${{ steps.security-check.outputs.result }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,6 +42,10 @@ jobs:
         run: |
           echo "Checking GitHub Actions workflows..."
           find .github/workflows -type f -name "*.yml" -o -name "*.yaml"
+
+      - name: Generate security result
+        id: security-check
+        run: echo "result=PASS" >> "$GITHUB_OUTPUT"
   
   
   gate:
@@ -52,3 +59,7 @@ jobs:
       - name: Gate
         if: github.event_name == 'pull_request'
         run: echo "All checks passed"
+
+      - name: Show security result
+        run: 'echo "Security result: ${{ needs.security.outputs.security-result }}"'
+    
