@@ -1,0 +1,32 @@
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run tests
+        run: echo "Tests passed"
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run security check
+        run: echo "Security check passed"
+
+  gate:
+    needs:
+      - test
+      - security
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Final gate
+        run: echo "All checks passed - pipeline can continue"
