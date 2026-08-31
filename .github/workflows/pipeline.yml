@@ -18,7 +18,9 @@ jobs:
 
     steps:
       - name: Run security check
-        run: echo "Security check passed"
+        run: |
+              echo "Security check failed"
+              exit 1
 
   gate:
     needs:
