@@ -56,10 +56,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Gate
-        if: github.event_name == 'pull_request'
-        run: echo "All checks passed"
+      - name: Security gate passed
+        if: needs.security.outputs.security-result == 'PASS'
+        run: echo "Security gate passed"
 
-      - name: Show security result
-        run: 'echo "Security result: ${{ needs.security.outputs.security-result }}"'
+      - name: Security gate failed
+        if: needs.security.outputs.security-result == 'FAIL'
+        run: |
+          echo "Security gate failed"
+          exit 1
     
