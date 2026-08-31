@@ -45,7 +45,7 @@ jobs:
 
       - name: Generate security result
         id: security-check
-        run: echo "result=PASS" >> "$GITHUB_OUTPUT"
+        run: echo "result=FAIL" >> "$GITHUB_OUTPUT"
   
   
   gate:
