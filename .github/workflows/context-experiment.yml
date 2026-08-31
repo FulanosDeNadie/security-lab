@@ -1,0 +1,35 @@
+name: Context experiment
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  show-context:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Show context
+      run: |
+        echo "Event: ${{ github.event_name }}"
+        echo "Actor: ${{ github.actor }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "SHA: ${{ github.sha }}"
+
+    - name: Show PR information
+      run: |
+        echo "PR number: ${{ github.event.pull_request.number }}"
+        echo "Head/Base branch: ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}"
+
+
+    - name: Always runs
+      run: echo "This always runs"
+
+    - name: Only on push
+      if: github.event_name == 'push'
+      run: echo "This only runs on push"
+
+    - name: Only on Pull Request
+      if: github.event_name == 'pull_request'
+      run: echo "This only runs on a Pull Request"
