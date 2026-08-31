@@ -20,5 +20,16 @@ jobs:
     - name: Show PR information
       run: |
         echo "PR number: ${{ github.event.pull_request.number }}"
-        echo "Source/base branch: ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}"
-        
+        echo "Head/Base branch: ${{ github.event.pull_request.head.ref }} → ${{ github.event.pull_request.base.ref }}"
+
+
+    - name: Always runs
+      run: echo "This always runs"
+
+    - name: Only on push
+      if: github.event_name == 'push'
+      run: echo "This only runs on push"
+
+    - name: Only on Pull Request
+      if: github.event_name == 'pull_request'
+      run: echo "This only runs on a Pull Request"
