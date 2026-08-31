@@ -4,10 +4,17 @@ on:
   push:
   pull_request:
 
+env:
+  ENVIRONMENT: testing
+  PROJECT_NAME: security-lab
+
 jobs:
 
   test:
     runs-on: ubuntu-latest
+
+    env:
+      ENVIRONMENT: staging
 
     steps:
       - name: Checkout repository
@@ -32,12 +39,25 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "SHA: ${{ github.sha }}"
 
+      - name: Show environment
+        env:
+          ENVIRONMENT: development
+
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          echo "Project: $PROJECT_NAME"
+
   security:
     runs-on: ubuntu-latest
 
     steps:
       - name: Run security check
         run: echo "Security check passed"
+      
+      - name: Show environment
+        run: |
+          echo "Environment: $ENVIRONMENT"
+          echo "Project: $PROJECT_NAME"
 
   gate:
     needs:
