@@ -7,28 +7,26 @@ permissions:
   contents: read
 
 jobs:
-
   read-job:
     runs-on: ubuntu-latest
-
     steps:
-        - name: Show auth status
-          run: gh auth status
-        - name: Read repository
-          run: |
-           gh api repos/${{ github.repository }}
+      - name: Read repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/${{ github.repository }}
 
   write-job:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       issues: write
-
     steps:
       - name: Create issue
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh api \
-            --method POST \
-            repos/${{ github.repository }}/issues \
-            -f title="Job permission test"
+          --method POST \
+          repos/${{ github.repository }}/issues \
+          -f title="Job permission test"
