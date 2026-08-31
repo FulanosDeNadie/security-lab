@@ -1,0 +1,25 @@
+name: Token permissions experiment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  token-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Read repository
+        run: |
+          git ls-remote https://github.com/${{ github.repository }}.git
+
+      - name: Try to write repository
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api \
+            --method POST \
+            repos/${{ github.repository }}/issues \
+            -f title="Permission test"
