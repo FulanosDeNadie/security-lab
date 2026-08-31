@@ -1,0 +1,74 @@
+name: CI Pipeline
+
+on:
+  push:
+  pull_request:
+
+env:
+  ENVIRONMENT: productio
+  PROJECT_NAME: security-lab
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest
+
+  security:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    outputs:
+      security-result: ${{ steps.security-check.outputs.result }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check workflow files
+        run: |
+          echo "Checking GitHub Actions workflows..."
+          find .github/workflows -type f -name "*.yml" -o -name "*.yaml"
+
+      - name: Generate security result
+        id: security-check
+        run: echo "result=FAIL" >> "$GITHUB_OUTPUT"
+
+      - name: Fail the check
+        run: |
+          echo "Security scanner found a problem"
+          exit 1
+  
+  
+  gate:
+    needs:
+      - test
+      - security
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Security gate passed
+        if: needs.security.outputs.security-result == 'PASS'
+        run: echo "Security gate passed"
+
+      - name: Security gate failed
+        if: needs.security.outputs.security-result == 'FAIL'
+        run: |
+          echo "Security gate failed"
+          exit 1
+    
