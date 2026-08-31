@@ -12,9 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Read repository
-        run: |
-          gh api repos/${{ github.repository }}
+        - name: Show auth status
+          run: gh auth status
+        - name: Read repository
+          run: |
+           gh api repos/${{ github.repository }}
 
   write-job:
     runs-on: ubuntu-latest
