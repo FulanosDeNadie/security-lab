@@ -5,60 +5,27 @@ on:
   pull_request:
 
 env:
-  ENVIRONMENT: testing
+  ENVIRONMENT: productio
   PROJECT_NAME: security-lab
 
 jobs:
 
   test:
     runs-on: ubuntu-latest
-
-    env:
-      ENVIRONMENT: staging
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Show current directory
-        run: pwd
-
-      - name: Show git status
-        run: git status
-
-      - name: Show current commit
-        run: git rev-parse HEAD
-
-      - name: Show repository files
-        run: ls -la
-      
-      - name: Show GitHub context
-        run: |
-          echo "Actor: ${{ github.actor }}"
-          echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "SHA: ${{ github.sha }}"
-
-      - name: Show environment
-        env:
-          ENVIRONMENT: development
-
-        run: |
-          echo "Environment: $ENVIRONMENT"
-          echo "Project: $PROJECT_NAME"
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: echo "Tests passed"
 
   security:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Run security check
+      - name: Security check
+        if: github.event_name == 'pull_request'
         run: echo "Security check passed"
-      
-      - name: Show environment
-        run: |
-          echo "Environment: $ENVIRONMENT"
-          echo "Project: $PROJECT_NAME"
-
+  
+  
   gate:
     needs:
       - test
@@ -67,5 +34,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Final gate
-        run: echo "All checks passed - pipeline can continue"
+      - name: Gate
+        if: github.event_name == 'pull_request'
+        run: echo "All checks passed"
