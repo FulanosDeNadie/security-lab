@@ -30,6 +30,7 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     outputs:
       security-result: ${{ steps.security-check.outputs.result }}
@@ -46,6 +47,11 @@ jobs:
       - name: Generate security result
         id: security-check
         run: echo "result=FAIL" >> "$GITHUB_OUTPUT"
+
+      - name: Fail the check
+        run: |
+          echo "Security scanner found a problem"
+          exit 1
   
   
   gate:
