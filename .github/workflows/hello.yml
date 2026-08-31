@@ -4,11 +4,16 @@ on:
   push:
   pull_request: 
     types: [opened]
-    
+
 jobs:
   trigger-test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show message
-        run: echo "The workflow was triggered by a pull request"
+      - name: Show context
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"

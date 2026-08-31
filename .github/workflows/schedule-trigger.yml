@@ -1,0 +1,12 @@
+name: Branch trigger experiment - scheduled
+on:
+  schedule:
+    - cron: '0 * * * 1' # Runs every 5 minutes
+
+jobs:
+  branch-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show message
+        run: echo "This workflow was triggered by a schedule"
