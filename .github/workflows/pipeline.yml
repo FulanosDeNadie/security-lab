@@ -24,6 +24,13 @@ jobs:
 
       - name: Show repository files
         run: ls -la
+      
+      - name: Show GitHub context
+        run: |
+          echo "Actor: ${{ github.actor }}"
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
 
   security:
     runs-on: ubuntu-latest
