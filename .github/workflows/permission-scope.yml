@@ -15,6 +15,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api repos/${{ github.repository }}
+          
+      - name: Try to create issue
+        env:
+            GH_TOKEN: ${{ github.token }}
+        run: |
+            gh api \
+            --method POST \
+            repos/${{ github.repository }}/issues \
+            -f title="Should fail - read job"
 
   write-job:
     runs-on: ubuntu-latest
