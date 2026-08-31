@@ -1,11 +1,12 @@
-name: Hello
+name: Trigger experiment
 
 on:
-  pull_request:
+  push:
+  pull_request: 
     types: [opened]
 
 jobs:
-  hello:
+  trigger-test:
     runs-on: ubuntu-latest
 
     steps:
