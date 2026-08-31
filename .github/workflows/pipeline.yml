@@ -13,6 +13,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Show current directory
+        run: pwd
+
+      - name: Show git status
+        run: git status
+
+      - name: Show current commit
+        run: git rev-parse HEAD
+
       - name: Show repository files
         run: ls -la
 
