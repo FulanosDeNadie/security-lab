@@ -1,0 +1,32 @@
+name: Permission scope experiment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  read-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Read repository
+        run: |
+          gh api repos/${{ github.repository }}
+
+  write-job:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      issues: write
+
+    steps:
+      - name: Create issue
+        run: |
+          gh api \
+            --method POST \
+            repos/${{ github.repository }}/issues \
+            -f title="Job permission test"
