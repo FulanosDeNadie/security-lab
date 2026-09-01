@@ -1,0 +1,16 @@
+name: Vulnerable workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Name
+        required: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run command
+        run: echo "Hello ${{ github.event.inputs.name }}"
