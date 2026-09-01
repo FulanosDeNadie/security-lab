@@ -13,6 +13,13 @@ jobs:
         with:
             ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Inspect checkout
+        run: |
+            git rev-parse HEAD
+            git status
+            ls -la
+            find . -maxdepth 3 -type f
+
       - name: Run PR code
         run: |
           echo "Running code from the PR"
