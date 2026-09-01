@@ -3,8 +3,7 @@ name: Permission scope experiment
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   read-job:
@@ -15,7 +14,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api repos/${{ github.repository }}
-          
+
       - name: Try to create issue
         env:
             GH_TOKEN: ${{ github.token }}
