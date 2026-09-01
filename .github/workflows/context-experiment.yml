@@ -1,7 +1,6 @@
 name: Context experiment
 
 on:
-  push:
   pull_request:
 
 jobs:
