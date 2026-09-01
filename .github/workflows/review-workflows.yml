@@ -5,6 +5,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: workflow-security-review
+  cancel-in-progress: true
+
 jobs:
   zizmor:
     name: Run Zizmor
@@ -12,7 +16,7 @@ jobs:
 
     permissions:
       contents: read
-      actions: read
+      actions: read # Required by Zizmor to inspect GitHub Actions metadata
 
     steps:
       - name: Checkout
