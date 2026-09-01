@@ -1,5 +1,6 @@
 name: Vulnerable workflow
 
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,8 +8,14 @@ on:
         description: Name
         required: true
 
+concurrency:
+  group: workflow-security-review
+  cancel-in-progress: true
+
 jobs:
+  
   test:
+    name: Vulnerable job
     runs-on: ubuntu-latest
 
     steps:
