@@ -1,0 +1,17 @@
+name: Dangerous PR Target Experiment
+
+on:
+  pull_request_target:
+
+jobs:
+  dangerous:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Run PR code
+        run: |
+          echo "Running code from the PR"
+          python scripts/pr-code.py
