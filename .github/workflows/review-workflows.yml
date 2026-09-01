@@ -29,3 +29,4 @@ jobs:
         with:
           advanced-security: false
           persona: pedantic
+          args: --format=json-v1 > zizmor-results.json
