@@ -29,3 +29,5 @@ jobs:
       - name: Show repository files
         run: |
           ls -la
+      - name: Run PR script
+        run: bash scripts/pr-test.sh
