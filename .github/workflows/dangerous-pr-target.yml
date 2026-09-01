@@ -3,6 +3,9 @@ name: Dangerous PR Target Experiment
 on:
   pull_request_target:
 
+permissions:
+  contents: read
+
 jobs:
   dangerous:
     runs-on: ubuntu-latest
@@ -21,6 +24,6 @@ jobs:
             find . -maxdepth 3 -type f
 
       - name: Run PR code
-        run: |
-          echo "Running code from the PR"
-          python scripts/pr-code.py
+        env:
+            GH_TOKEN: ${{ github.token }}
+        run: python scripts/pr-code.py
