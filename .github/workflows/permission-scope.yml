@@ -3,7 +3,8 @@ name: Permission scope experiment
 on:
   workflow_dispatch:
 
-permissions: {}
+permissions:
+     contents: read
 
 jobs:
   read-job:
