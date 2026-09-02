@@ -56,12 +56,9 @@ jobs:
           set -euo pipefail
 
           alerts=$(gh api \
-            --paginate \
-            "/repos/${GH_REPO}/code-scanning/alerts" \
-            -f "pr=${PR_NUMBER}" \
-            -f "tool_name=zizmor" \
-            -f "state=open" \
-            -f "per_page=100")
+            --method GET \
+            -H "Accept: application/vnd.github+json" \
+            "/repos/${GH_REPO}/code-scanning/alerts?pr=${PR_NUMBER}&tool_name=zizmor&state=open&per_page=100")
 
           count=$(echo "$alerts" | jq 'length')
 
@@ -74,47 +71,20 @@ jobs:
 
           **Merge status:** ✅ No security finding is blocking the merge."
           else
-            blocking=$(echo "$alerts" | jq '
-              [
-                .[] |
-                select(
-                  (.rule.severity // "" | ascii_downcase) == "error"
-                  or
-                  (.rule.security_severity_level // "" | ascii_downcase) == "high"
-                  or
-                  (.rule.security_severity_level // "" | ascii_downcase) == "critical"
-                )
-              ] |
-              length
-            ')
-
-            warnings=$(echo "$alerts" | jq '
-              [
-                .[] |
-                select(
-                  (.rule.severity // "" | ascii_downcase) == "warning"
-                  or
-                  (.rule.security_severity_level // "" | ascii_downcase) == "medium"
-                  or
-                  (.rule.security_severity_level // "" | ascii_downcase) == "low"
-                )
-              ] |
-              length
-            ')
-
             body="## 🔐 Zizmor security review
 
           Zizmor found **${count} open finding(s)** in this pull request.
 
-          **Blocking findings:** ${blocking}
-          **Warning findings:** ${warnings}
-
           "
+
+            blocking=0
+            warnings=0
 
             while IFS= read -r finding; do
               number=$(echo "$finding" | jq -r '.number')
               rule=$(echo "$finding" | jq -r '.rule.id // .rule.name // "unknown"')
               description=$(echo "$finding" | jq -r '.rule.description // "No description available."')
+
               severity=$(echo "$finding" | jq -r '
                 if .rule.security_severity_level then
                   .rule.security_severity_level
@@ -143,8 +113,10 @@ jobs:
                  [ "$severity" = "HIGH" ] || \
                  [ "$severity" = "CRITICAL" ]; then
                 status="🔴 BLOCKING"
+                blocking=$((blocking + 1))
               else
                 status="🟡 WARNING"
+                warnings=$((warnings + 1))
               fi
 
               body="${body}### ${status} — ${severity}
@@ -160,16 +132,19 @@ jobs:
           "
             done < <(echo "$alerts" | jq -c '.[]')
 
-            if [ "$blocking" -gt 0 ]; then
-              body="${body}---
+            body="${body}---
 
-          **Merge status:** ❌ **BLOCKED**
+          **Blocking findings:** ${blocking}
+          **Warning findings:** ${warnings}
+
+          "
+
+            if [ "$blocking" -gt 0 ]; then
+              body="${body}**Merge status:** ❌ **BLOCKED**
 
           At least one High/Critical finding was detected."
             else
-              body="${body}---
-
-          **Merge status:** ✅ **NOT BLOCKED BY ZIZMOR**
+              body="${body}**Merge status:** ✅ **NOT BLOCKED BY ZIZMOR**
 
           No High/Critical findings were detected."
             fi
