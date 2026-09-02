@@ -2,6 +2,10 @@ name: Workflow security review
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions: {}
 
@@ -16,7 +20,7 @@ jobs:
 
     permissions:
       contents: read
-      actions: read # Required by Zizmor to inspect GitHub Actions metadata
+      actions: read
       security-events: write
 
     steps:
@@ -25,9 +29,154 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Run zizmor
+      - name: Run Zizmor
         uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
         with:
           advanced-security: true
           persona: pedantic
-    
+
+  report:
+    name: Report security findings
+    runs-on: ubuntu-latest
+    needs: zizmor
+
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      security-events: read
+      issues: write
+
+    steps:
+      - name: Read Code Scanning alerts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          alerts=$(gh api \
+            --paginate \
+            "/repos/${GH_REPO}/code-scanning/alerts" \
+            -f "pr=${PR_NUMBER}" \
+            -f "tool_name=zizmor" \
+            -f "state=open" \
+            -f "per_page=100")
+
+          count=$(echo "$alerts" | jq 'length')
+
+          echo "Found ${count} open Zizmor alert(s)."
+
+          if [ "$count" -eq 0 ]; then
+            body="## 🟢 Zizmor security review
+
+          No open Zizmor findings were detected for this pull request.
+
+          **Merge status:** ✅ No security finding is blocking the merge."
+          else
+            blocking=$(echo "$alerts" | jq '
+              [
+                .[] |
+                select(
+                  (.rule.severity // "" | ascii_downcase) == "error"
+                  or
+                  (.rule.security_severity_level // "" | ascii_downcase) == "high"
+                  or
+                  (.rule.security_severity_level // "" | ascii_downcase) == "critical"
+                )
+              ] |
+              length
+            ')
+
+            warnings=$(echo "$alerts" | jq '
+              [
+                .[] |
+                select(
+                  (.rule.severity // "" | ascii_downcase) == "warning"
+                  or
+                  (.rule.security_severity_level // "" | ascii_downcase) == "medium"
+                  or
+                  (.rule.security_severity_level // "" | ascii_downcase) == "low"
+                )
+              ] |
+              length
+            ')
+
+            body="## 🔐 Zizmor security review
+
+          Zizmor found **${count} open finding(s)** in this pull request.
+
+          **Blocking findings:** ${blocking}
+          **Warning findings:** ${warnings}
+
+          "
+
+            while IFS= read -r finding; do
+              number=$(echo "$finding" | jq -r '.number')
+              rule=$(echo "$finding" | jq -r '.rule.id // .rule.name // "unknown"')
+              description=$(echo "$finding" | jq -r '.rule.description // "No description available."')
+              severity=$(echo "$finding" | jq -r '
+                if .rule.security_severity_level then
+                  .rule.security_severity_level
+                elif .rule.severity then
+                  .rule.severity
+                else
+                  "unknown"
+                end
+              ' | tr '[:lower:]' '[:upper:]')
+
+              file=$(echo "$finding" | jq -r '
+                .most_recent_instance.location.path //
+                .most_recent_instance.location.uri //
+                "unknown"
+              ')
+
+              line=$(echo "$finding" | jq -r '
+                .most_recent_instance.location.start_line //
+                .most_recent_instance.location.line //
+                "?"
+              ')
+
+              html_url=$(echo "$finding" | jq -r '.html_url')
+
+              if [ "$severity" = "ERROR" ] || \
+                 [ "$severity" = "HIGH" ] || \
+                 [ "$severity" = "CRITICAL" ]; then
+                status="🔴 BLOCKING"
+              else
+                status="🟡 WARNING"
+              fi
+
+              body="${body}### ${status} — ${severity}
+
+          **Alert:** #${number}
+          **Rule:** \`${rule}\`
+          **Location:** \`${file}:${line}\`
+
+          ${description}
+
+          [View alert](${html_url})
+
+          "
+            done < <(echo "$alerts" | jq -c '.[]')
+
+            if [ "$blocking" -gt 0 ]; then
+              body="${body}---
+
+          **Merge status:** ❌ **BLOCKED**
+
+          At least one High/Critical finding was detected."
+            else
+              body="${body}---
+
+          **Merge status:** ✅ **NOT BLOCKED BY ZIZMOR**
+
+          No High/Critical findings were detected."
+            fi
+          fi
+
+          echo "$body"
+
+          gh issue comment "$PR_NUMBER" \
+            --repo "$GH_REPO" \
+            --body "$body"
