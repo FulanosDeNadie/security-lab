@@ -68,76 +68,165 @@ jobs:
 
           echo "Found ${count} open Zizmor alert(s)."
 
-          body="## 🔐 Zizmor security review\n\n"
+          # ------------------------------------------------------------------
+          # Build report
+          # ------------------------------------------------------------------
+
+          body="## 🔐 Zizmor Security Review
+
+          "
 
           if [ "$count" -eq 0 ]; then
 
-            body="${body}No open Zizmor findings were detected for this pull request.\n\n"
-            body="${body}**Merge status:** ✅ **NOT BLOCKED**"
+            body+="**0 findings · 0 blocking · 0 warnings**
+
+          "
+            body+="### Merge status
+
+          "
+            body+="✅ **NOT BLOCKED**
+
+          "
+            body+="No open Zizmor findings were detected for this pull request."
 
           else
 
             blocking=0
             warnings=0
+            info=0
+
+            blocking_section=""
+            warning_section=""
+            info_section=""
 
             while IFS= read -r finding; do
 
-              number=$(echo "$finding" | jq -r '.number')
               rule=$(echo "$finding" | jq -r '.rule.id // .rule.name // "unknown"')
               severity=$(echo "$finding" | jq -r '.rule.severity // "unknown"')
-              security_severity=$(echo "$finding" | jq -r '.rule.security_severity_level // ""')
-              description=$(echo "$finding" | jq -r '.rule.description // "No description available."')
               file=$(echo "$finding" | jq -r '.most_recent_instance.location.path // "unknown"')
               line=$(echo "$finding" | jq -r '.most_recent_instance.location.start_line // "?"')
               html_url=$(echo "$finding" | jq -r '.html_url')
 
               severity_upper=$(echo "$severity" | tr '[:lower:]' '[:upper:]')
-              security_severity_upper=$(echo "$security_severity" | tr '[:lower:]' '[:upper:]')
 
-              if [ "$severity_upper" = "ERROR" ] ||
-                 [ "$security_severity_upper" = "HIGH" ] ||
-                 [ "$security_severity_upper" = "CRITICAL" ]; then
+              case "$severity_upper" in
 
-                status="🔴 BLOCKING — High+"
-                blocking=$((blocking + 1))
+                ERROR|HIGH|CRITICAL)
+                  blocking=$((blocking + 1))
 
-              else
+                  blocking_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
+                  ;;
 
-                status="🟡 WARNING — Medium/Low"
-                warnings=$((warnings + 1))
+                WARNING|MEDIUM|LOW)
+                  warnings=$((warnings + 1))
 
-              fi
+                  warning_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
+                  ;;
 
-              body="${body}### ${status}\n\n"
-              body="${body}**Alert:** #${number}\n"
-              body="${body}**Rule:** \`${rule}\`\n"
-              body="${body}**Severity:** ${severity_upper}\n"
-              body="${body}**Location:** \`${file}:${line}\`\n\n"
-              body="${body}${description}\n\n"
-              body="${body}[View alert](${html_url})\n\n"
+                NOTE|INFO)
+                  info=$((info + 1))
+
+                  info_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
+                  ;;
+
+                *)
+                  info=$((info + 1))
+
+                  info_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
+                  ;;
+
+              esac
 
             done < <(echo "$alerts" | jq -c '.[]')
 
-            body="${body}---\n\n"
-            body="${body}**Blocking findings:** ${blocking}\n"
-            body="${body}**Warning findings:** ${warnings}\n\n"
+            body+="**${count} findings · ${blocking} blocking · ${warnings} warnings · ${info} informational**
+
+          "
 
             if [ "$blocking" -gt 0 ]; then
 
-              body="${body}**Merge status:** ❌ **BLOCKED**\n\n"
-              body="${body}At least one High/Critical finding was detected."
+              body+="---
+
+          "
+              body+="### 🔴 Blocking
+
+          "
+              body+="${blocking_section}"
+
+            fi
+
+            if [ "$warnings" -gt 0 ]; then
+
+              body+="---
+
+          "
+              body+="### ⚠️ Warnings
+
+          "
+              body+="${warning_section}"
+
+            fi
+
+            if [ "$info" -gt 0 ]; then
+
+              body+="---
+
+          "
+              body+="### ℹ️ Informational
+
+          "
+              body+="${info_section}"
+
+            fi
+
+            body+="---
+
+          "
+            body+="### Merge status
+
+          "
+
+            if [ "$blocking" -gt 0 ]; then
+
+              body+="❌ **BLOCKED**
+
+          "
+              body+="At least one High/Critical finding requires remediation."
 
             else
 
-              body="${body}**Merge status:** ✅ **NOT BLOCKED**\n\n"
-              body="${body}No High/Critical findings were detected."
+              body+="✅ **NOT BLOCKED**
+
+          "
+              body+="No High/Critical findings were detected."
 
             fi
+
+            body+="
+
+          > **Policy:** High/Critical findings block the merge. Medium/Low findings are warnings."
+
           fi
 
           echo "----- Comment body -----"
-          printf '%b\n' "$body"
+          printf '%s\n' "$body"
           echo "------------------------"
+
+          # ------------------------------------------------------------------
+          # Create PR comment
+          # ------------------------------------------------------------------
 
           gh api \
             --method POST \
