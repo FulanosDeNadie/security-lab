@@ -17,6 +17,7 @@ jobs:
     permissions:
       contents: read
       actions: read # Required by Zizmor to inspect GitHub Actions metadata
+      security-events: write
 
     steps:
       - name: Checkout
