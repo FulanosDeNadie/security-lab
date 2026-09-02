@@ -19,4 +19,4 @@ jobs:
 
     steps:
       - name: Run command
-        run: echo "Hello world"
+        run: echo "Hello world" #$ {{ github.event.pull_request.title }}
