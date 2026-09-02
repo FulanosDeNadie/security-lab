@@ -20,7 +20,7 @@ jobs:
 
     permissions:
       contents: read
-      actions: read
+      actions: read # Required by Zizmor to inspect GitHub Actions metadata
       security-events: write
 
     steps:
@@ -36,7 +36,7 @@ jobs:
           persona: pedantic
 
   report:
-    name: Report security findings
+    name: Report Zizmor findings
     runs-on: ubuntu-latest
     needs: zizmor
 
@@ -45,6 +45,7 @@ jobs:
     permissions:
       security-events: read
       issues: write
+      pull-requests: write
 
     steps:
       - name: Report Zizmor findings
@@ -67,23 +68,41 @@ jobs:
 
           echo "Found ${count} open Zizmor alert(s)."
 
-          body="## 🔐 Zizmor security review
+          # ------------------------------------------------------------------
+          # Build report
+          # ------------------------------------------------------------------
+
+          body="## 🔐 Zizmor Security Review
 
           "
 
           if [ "$count" -eq 0 ]; then
-            body="${body}No open Zizmor findings were detected for this pull request.
 
-          **Merge status:** ✅ **NOT BLOCKED**"
+            body+="**0 findings · 0 blocking · 0 warnings**
+
+          "
+            body+="### Merge status
+
+          "
+            body+="✅ **NOT BLOCKED**
+
+          "
+            body+="No open Zizmor findings were detected for this pull request."
+
           else
+
             blocking=0
             warnings=0
+            info=0
+
+            blocking_section=""
+            warning_section=""
+            info_section=""
 
             while IFS= read -r finding; do
-              number=$(echo "$finding" | jq -r '.number')
+
               rule=$(echo "$finding" | jq -r '.rule.id // .rule.name // "unknown"')
               severity=$(echo "$finding" | jq -r '.rule.severity // "unknown"')
-              description=$(echo "$finding" | jq -r '.rule.description // "No description available."')
               file=$(echo "$finding" | jq -r '.most_recent_instance.location.path // "unknown"')
               line=$(echo "$finding" | jq -r '.most_recent_instance.location.start_line // "?"')
               html_url=$(echo "$finding" | jq -r '.html_url')
@@ -91,53 +110,127 @@ jobs:
               severity_upper=$(echo "$severity" | tr '[:lower:]' '[:upper:]')
 
               case "$severity_upper" in
+
                 ERROR|HIGH|CRITICAL)
-                  status="🔴 BLOCKING"
                   blocking=$((blocking + 1))
+
+                  blocking_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
                   ;;
-                WARNING|MEDIUM|LOW|NOTE)
-                  status="🟡 WARNING"
+
+                WARNING|MEDIUM|LOW)
                   warnings=$((warnings + 1))
+
+                  warning_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
                   ;;
+
+                NOTE|INFO)
+                  info=$((info + 1))
+
+                  info_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
+                  ;;
+
                 *)
-                  status="⚪ INFO"
+                  info=$((info + 1))
+
+                  info_section+="
+          - \`${rule}\`
+            \`${file}:${line}\` · [details](${html_url})
+          "
                   ;;
+
               esac
 
-              body="${body}### ${status} — ${severity_upper}
-
-          **Alert:** #${number}
-          **Rule:** \`${rule}\`
-          **Location:** \`${file}:${line}\`
-
-          ${description}
-
-          [View alert](${html_url})
-
-          "
             done < <(echo "$alerts" | jq -c '.[]')
 
-            body="${body}---
-
-          **Blocking findings:** ${blocking}
-          **Warning findings:** ${warnings}
+            body+="**${count} findings · ${blocking} blocking · ${warnings} warnings · ${info} informational**
 
           "
 
             if [ "$blocking" -gt 0 ]; then
-              body="${body}**Merge status:** ❌ **BLOCKED**
 
-          At least one High/Critical finding was detected."
-            else
-              body="${body}**Merge status:** ✅ **NOT BLOCKED**
+              body+="---
 
-          No High/Critical findings were detected."
+          "
+              body+="### 🔴 Blocking
+
+          "
+              body+="${blocking_section}"
+
             fi
+
+            if [ "$warnings" -gt 0 ]; then
+
+              body+="---
+
+          "
+              body+="### ⚠️ Warnings
+
+          "
+              body+="${warning_section}"
+
+            fi
+
+            if [ "$info" -gt 0 ]; then
+
+              body+="---
+
+          "
+              body+="### ℹ️ Informational
+
+          "
+              body+="${info_section}"
+
+            fi
+
+            body+="---
+
+          "
+            body+="### Merge status
+
+          "
+
+            if [ "$blocking" -gt 0 ]; then
+
+              body+="❌ **BLOCKED**
+
+          "
+              body+="At least one High/Critical finding requires remediation."
+
+            else
+
+              body+="✅ **NOT BLOCKED**
+
+          "
+              body+="No High/Critical findings were detected."
+
+            fi
+
+            body+="
+
+          > **Policy:** High/Critical findings block the merge. Medium/Low findings are warnings."
+
           fi
 
-          echo "$body"
+          echo "----- Comment body -----"
+          printf '%s\n' "$body"
+          echo "------------------------"
 
-          gh issue comment \
-            "$PR_NUMBER" \
-            --repo "$GH_REPO" \
-            --body "$body"
+          # ------------------------------------------------------------------
+          # Create PR comment
+          # ------------------------------------------------------------------
+
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "/repos/${GH_REPO}/issues/${PR_NUMBER}/comments" \
+            -f body="$body"
